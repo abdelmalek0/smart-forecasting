@@ -2,7 +2,7 @@ import logging
 import os
 
 # Define the log directory and ensure it exists
-log_dir = '/home/debian/SmartForecasting/logs'
+log_dir = '/home/ml/SmartForecasting/logs'
 os.makedirs(log_dir, exist_ok=True)
 
 # Configure logging

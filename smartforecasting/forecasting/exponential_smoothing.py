@@ -98,8 +98,7 @@ class ExponentialSmoothing(ForecastStrategy):
         result = []
         start_range = data['ts'].iloc[-1]
         end_range = add_time(date, frequency, steps)
-        logger.info(f'steps: {len(list(
-            generate_range_datetime(start_range, end_range, frequency)))}')
+        logger.info(f'steps: {len(list(generate_range_datetime(start_range, end_range, frequency)))}')
         
         for index, timestamp in enumerate(list(
             generate_range_datetime(start_range, end_range, frequency))):

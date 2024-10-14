@@ -90,24 +90,27 @@ async def datasources(request: Request):
     """
     datasources = await fetch_datasources()  # Assuming this should be an async call.
 
-    return Div(
+    return (
+        Title("SmartForecasting - Datasources"),
         Div(
-            Navbar(index=1),
             Div(
-                Table(
-                    Thead(
-                        Tr(
-                            *[Th(header) for header in DATASOURCES_HEADERS]
+                Navbar(index=1),
+                Div(
+                    Table(
+                        Thead(
+                            Tr(
+                                *[Th(header) for header in DATASOURCES_HEADERS]
+                            ),
+                            cls="bg-neutral text-white"
                         ),
-                        cls="bg-neutral text-white"
+                        Tbody(
+                            *(await build_datasources_table(datasources))
+                        ),
+                        cls="table bg-gray-50"
                     ),
-                    Tbody(
-                        *(await build_datasources_table(datasources))
-                    ),
-                    cls="table bg-gray-50"
+                    cls="p-5 w-screen"
                 ),
-                cls="p-5 w-screen"
-            ),
-            cls='flex flex-col items-start gap-2 items-center'
+                cls='flex flex-col items-start gap-2 items-center'
+            )
         )
     )

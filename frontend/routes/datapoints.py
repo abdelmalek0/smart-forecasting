@@ -49,11 +49,11 @@ async def build_table_content(datapoints: List[dict]) -> list:
     """
     rows = [
         Tr(
-            Th(f"{index}"),
+            Th(f'{index}'),
             Td(f'{datapoint["ts"]}'),
-            Td(f"{datapoint["value"]}"),
-            Td(f"{datapoint["AutoReg"]}"),
-            Td(f"{datapoint["ExpSmoothing"]}")
+            Td(f'{datapoint["value"]}'),
+            Td(f'{datapoint["AutoReg"]}'),
+            Td(f'{datapoint["ExpSmoothing"]}')
         )
         for index, datapoint in enumerate(datapoints)
     ]
@@ -146,69 +146,72 @@ async def datapoints(request: Request):
             cards_content.append(Card("Exponential Smoothing", rmse_exp))    
                 
     
-    return Div(
+    return (
+        Title("SmartForecasting - Datapoints"),
+        Div(
+            Div(
+                Navbar(index=2),
                 Div(
-                    Navbar(index=2),
                     Div(
-                        Div(
-                            H5(
-                                "Data source:", 
-                                cls='text-xl font-bold'
-                            ),
-                            Select(
-                                *(await generate_options_ui(datasources, datasource_id)),
-                                cls='select select-primary max-w-xs bg-gray-50',
-                                hx_on="change: this.value ? window.location.href = '/datapoints/' + encodeURIComponent(this.value) + '?latest=200' : ''"
-                            ),
-                            Label(
-                                Input(type='checkbox'),
-                                Div(
-                                    '📈',
-                                    **{'@click':'table = false'},
-                                    cls='swap-off'),
-                                Div(
-                                    '📅',
-                                    **{'@click':'table = true'},
-                                    cls='swap-on'),
-                                cls='swap swap-flip text-3xl'
-                            ),
-                            cls='flex flex-row items-center gap-4'
+                        H5(
+                            "Data source:", 
+                            cls='text-xl font-bold'
                         ),
-                        DateFilter(
-                            start_date, 
-                            end_date,
-                            minDate,
-                            maxDate
+                        Select(
+                            *(await generate_options_ui(datasources, datasource_id)),
+                            cls='select select-primary max-w-xs bg-gray-50',
+                            hx_on="change: this.value ? window.location.href = '/datapoints/' + encodeURIComponent(this.value) + '?latest=200' : ''"
                         ),
-                        cls='flex flex-row items-center w-screen justify-between px-6'
+                        Label(
+                            Input(type='checkbox'),
+                            Div(
+                                '📈',
+                                **{'@click':'table = false'},
+                                cls='swap-off'),
+                            Div(
+                                '📅',
+                                **{'@click':'table = true'},
+                                cls='swap-on'),
+                            cls='swap swap-flip text-3xl'
+                        ),
+                        cls='flex flex-row items-center gap-4'
                     ),
-                    Div(
-                        Div(
-                            *cards_content,
-                            cls='flex flex-row px-4 space-x-4'
-                            ),
-                        Div(
-                            *chart_content,    
-                        ),
-                        x_show="!table",
-                        cls='p-5 w-screen h-screen'
-                        ),
-                    Div(
-                        Table(
-                            Thead(
-                                Tr(
-                                    *[Th(header) for header in DATAPOINTS_HEADERS]
-                                ),
-                                cls="bg-neutral text-white"
-                            ),
-                            table_content,
-                            cls="table bg-gray-50",
-                            id='datatable'
-                        ),
-                        x_show="table",
-                        cls="p-5 w-screen"
+                    DateFilter(
+                        start_date, 
+                        end_date,
+                        minDate,
+                        maxDate
                     ),
-                    cls='flex flex-col items-start gap-4'
+                    cls='flex flex-row items-center w-screen justify-between px-6'
                 ),
-                x_data='{table: true}',
-            )
+                Div(
+                    Div(
+                        *cards_content,
+                        cls='flex flex-row px-4 space-x-4'
+                        ),
+                    Div(
+                        *chart_content,    
+                    ),
+                    x_show="!table",
+                    cls='p-5 w-screen h-screen'
+                    ),
+                Div(
+                    Table(
+                        Thead(
+                            Tr(
+                                *[Th(header) for header in DATAPOINTS_HEADERS]
+                            ),
+                            cls="bg-neutral text-white"
+                        ),
+                        table_content,
+                        cls="table bg-gray-50",
+                        id='datatable'
+                    ),
+                    x_show="table",
+                    cls="p-5 w-screen"
+                ),
+                cls='flex flex-col items-start gap-4'
+            ),
+            x_data='{table: true}',
+        )
+    )
