@@ -1,4 +1,5 @@
 import requests
+
 from utils.constants import API_BASE_URL
 
 def get_visible_pages(number_pages, current_page):

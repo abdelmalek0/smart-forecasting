@@ -1,6 +1,8 @@
-from fasthtml.common import *
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
+
+from fasthtml.common import Script
+
 
 @dataclass
 class Chart:
@@ -9,8 +11,8 @@ class Chart:
     exp: list
     start_date: str
     end_date: str
-    
-    js = '''
+
+    js = """
     document.addEventListener("DOMContentLoaded", function() {
         var options = {
             series: [
@@ -108,13 +110,13 @@ class Chart:
         var chartLine = new ApexCharts(document.querySelector("#chart-line"), optionsLine);
         chartLine.render();
     });
-    '''
-    
+    """
+
     def __ft__(self):
-        self.js = self.js.replace('DATA_PLACEHOLDER', json.dumps(self.data))
-        self.js = self.js.replace('AUTO_PLACEHOLDER', json.dumps(self.auto))
-        self.js = self.js.replace('EXP_PLACEHOLDER', json.dumps(self.exp))
-        self.js = self.js.replace('START_DATE', self.start_date)
-        self.js = self.js.replace('END_DATE', self.end_date)
+        self.js = self.js.replace("DATA_PLACEHOLDER", json.dumps(self.data))
+        self.js = self.js.replace("AUTO_PLACEHOLDER", json.dumps(self.auto))
+        self.js = self.js.replace("EXP_PLACEHOLDER", json.dumps(self.exp))
+        self.js = self.js.replace("START_DATE", self.start_date)
+        self.js = self.js.replace("END_DATE", self.end_date)
         # print(self.js)
         return Script(self.js)

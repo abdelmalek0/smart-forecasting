@@ -1,8 +1,22 @@
-from fasthtml.common import *
+from fasthtml.common import A
+from fasthtml.common import Button
+from fasthtml.common import Div
+from fasthtml.common import Table
+from fasthtml.common import Tbody
+from fasthtml.common import Td
+from fasthtml.common import Th
+from fasthtml.common import Thead
+from fasthtml.common import Title
+from fasthtml.common import Tr
+from starlette.requests import Request
+
+from components.badge import Badge
+from components.badge import SEMANTIC_COLOR
 from components.navbar import Navbar
-from components.badge import Badge, SEMANTIC_COLOR
-from utils.constants import DATASOURCES_HEADERS, API_BASE_URL
+from utils.constants import API_BASE_URL
+from utils.constants import DATASOURCES_HEADERS
 from utils.helpers import fetch_datasources
+
 
 def create_delete_button(datasource_id: int) -> Button:
     """
@@ -17,8 +31,9 @@ def create_delete_button(datasource_id: int) -> Button:
         hx_delete=f"{API_BASE_URL}/datasources/{datasource_id}?htmx=1",
         hx_target="closest tr",
         hx_confirm="Are you sure you want to delete this datasource?",
-        hx_swap="outerHTML"
+        hx_swap="outerHTML",
     )
+
 
 def create_details_button(datasource_id: int) -> A:
     """
@@ -30,8 +45,9 @@ def create_details_button(datasource_id: int) -> A:
     return A(
         "Details",
         cls="btn btn-active btn-xs text-white",
-        href=f"/datapoints/{datasource_id}?latest=200"
+        href=f"/datapoints/{datasource_id}?latest=200",
     )
+
 
 def create_badge(content: str, color: SEMANTIC_COLOR) -> Badge:
     """
@@ -43,6 +59,7 @@ def create_badge(content: str, color: SEMANTIC_COLOR) -> Badge:
     """
     return Badge(content, color)
 
+
 async def build_datasources_table(datasources: list) -> list:
     """
     Build a table of datasource rows from the provided list of datasources.
@@ -53,33 +70,36 @@ async def build_datasources_table(datasources: list) -> list:
     result = []
 
     for data_source in datasources:
-        datasource_id = data_source['id']
-        datasource_name = data_source['datasource_info']['name']
-        period_value = data_source['datasource_info']['period']['value']
-        period_type = data_source['datasource_info']['period']['type']
-        initialized_status = data_source['initialized']
-        trained_status = data_source['trained']
-        training_models = data_source['training']['models']
+        info = data_source["datasource_info"]
+        period = info["period"]
 
-        period_badge = create_badge(f"{period_value} {period_type}", SEMANTIC_COLOR.INFO)
-        model_badges = [create_badge(model, SEMANTIC_COLOR.SUCCESS) for model in training_models]
+        datasource_id = data_source["id"]
+        datasource_name = info["name"]
+        period_badge = create_badge(
+            f"{period['value']} {period['type']}", SEMANTIC_COLOR.INFO
+        )
+        model_badges = [
+            create_badge(model, SEMANTIC_COLOR.SUCCESS)
+            for model in data_source["training"]["models"]
+        ]
 
         row = Tr(
             Th(str(datasource_id)),
             Td(datasource_name),
             Td(period_badge),
-            Td(initialized_status),
+            Td(data_source["initialized"]),
             Td(*model_badges),
-            Td(trained_status),
+            Td(data_source["trained"]),
             Td(
                 create_details_button(datasource_id),
-                create_delete_button(datasource_id)
+                create_delete_button(datasource_id),
             ),
-            id=str(datasource_id)
+            id=str(datasource_id),
         )
         result.append(row)
 
     return result
+
 
 async def datasources(request: Request):
     """
@@ -98,19 +118,15 @@ async def datasources(request: Request):
                 Div(
                     Table(
                         Thead(
-                            Tr(
-                                *[Th(header) for header in DATASOURCES_HEADERS]
-                            ),
-                            cls="bg-neutral text-white"
+                            Tr(*[Th(header) for header in DATASOURCES_HEADERS]),
+                            cls="bg-neutral text-white",
                         ),
-                        Tbody(
-                            *(await build_datasources_table(datasources))
-                        ),
-                        cls="table bg-gray-50"
+                        Tbody(*(await build_datasources_table(datasources))),
+                        cls="table bg-gray-50",
                     ),
-                    cls="p-5 w-screen"
+                    cls="p-5 w-screen",
                 ),
-                cls='flex flex-col items-start gap-2 items-center'
+                cls="flex flex-col items-start gap-2 items-center",
             )
-        )
+        ),
     )

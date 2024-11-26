@@ -1,13 +1,16 @@
-from fasthtml.common import *
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
+
+from fasthtml.common import Script
+
 
 @dataclass
 class DataTable:
     content: dict
-    
+
     def __ft__(self):
-        return Script('''
+        return Script(
+            """
                         $(document).ready(function() {
                             $("#datatable").DataTable({
                                 data: content,
@@ -33,8 +36,5 @@ class DataTable:
                                 order: [[0]]
                             });
                         });
-                    '''.replace(
-                        'content', json.dumps(self.content)
-                        )
-                    
-                    )
+                    """.replace("content", json.dumps(self.content))
+        )

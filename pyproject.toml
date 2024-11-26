@@ -24,6 +24,7 @@ python-fasthtml = "^0.2.1"
 flask-cors = "^4.0.1"
 fh-matplotlib = "^0.0.3"
 python-dateutil = "^2.9.0.post0"
+reorder-python-imports = "^3.14.0"
 
 
 [build-system]
