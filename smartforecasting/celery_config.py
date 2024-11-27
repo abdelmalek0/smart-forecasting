@@ -1,6 +1,9 @@
 # celery_config.py
 from celery import Celery
-from constants import CELERY_RESULT_BACKEND, CELERY_BROKER_URL, MODULE
+
+from constants import CELERY_BROKER_URL
+from constants import CELERY_RESULT_BACKEND
+from constants import MODULE
 
 def make_celery(app):
     celery = Celery(

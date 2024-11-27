@@ -1,13 +1,13 @@
-from structs.models import Period
 from structs.enums import PeriodType
+from structs.models import Period
 
 frequency_mapping = {
-    PeriodType.MINUTE: 'T',
-    PeriodType.HOUR: 'H',
-    PeriodType.DAY: 'D',
-    PeriodType.WEEK: 'W',
-    PeriodType.MONTH: 'M',
-    PeriodType.YEAR: 'Y'
+    PeriodType.MINUTE: "T",
+    PeriodType.HOUR: "H",
+    PeriodType.DAY: "D",
+    PeriodType.WEEK: "W",
+    PeriodType.MONTH: "M",
+    PeriodType.YEAR: "Y",
 }
 
 

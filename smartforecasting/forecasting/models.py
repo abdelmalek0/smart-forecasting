@@ -1,27 +1,39 @@
-from abc import ABC, abstractmethod
-from datetime import date, datetime
-from typing import List, Tuple
-from structs.enums import ForecastModel
-import pandas as pd
-import redis
 import json
+from abc import ABC
+from abc import abstractmethod
+from datetime import date
+from datetime import datetime
+from typing import List
+
+import pandas as pd
+
 from logging_config import logger
 from redis_memory import RedisHandler
+from structs.enums import ForecastModel
+
 
 class ForecastContext:
-
     def __init__(self, algorithm_type: ForecastModel, datasource_id: int):
         logger.info(algorithm_type)
-        self.model = ForecastRegistry.get_model(algorithm_type, f'{datasource_id}_{algorithm_type.name}')
+        self.model = ForecastRegistry.get_model(
+            algorithm_type, f"{datasource_id}_{algorithm_type.name}"
+        )
 
-    def train(self, data: pd.DataFrame, frequency = '1D'):
+    def train(self, data: pd.DataFrame, frequency="1D"):
         return self.model.train(data, frequency)
 
-    def forecast(self, data: pd.DataFrame | None, date: date | datetime, steps: int = 1, frequency: str= '1D') -> pd.DataFrame | None:
+    def forecast(
+        self,
+        data: pd.DataFrame | None,
+        date: date | datetime,
+        steps: int = 1,
+        frequency: str = "1D",
+    ) -> pd.DataFrame | None:
         return self.model.forecast(data, date, steps, frequency)
 
     def set_model_params(self, model_params: list | None):
         self.model.set_model_params(model_params)
+
 
 class ForecastStrategy(ABC):
     def __init__(self, vector_id: str) -> None:
@@ -38,11 +50,11 @@ class ForecastStrategy(ABC):
         logger.info(self.model_params)
 
     @abstractmethod
-    def train(self, data, frequency = '1D') -> List[float]:
+    def train(self, data, frequency="1D") -> List[float]:
         pass
 
     @abstractmethod
-    def forecast(self, data, date, steps = 1, frequency = '1D') -> pd.DataFrame | None:
+    def forecast(self, data, date, steps=1, frequency="1D") -> pd.DataFrame | None:
         pass
 
     @abstractmethod
@@ -61,6 +73,7 @@ class ForecastRegistry:
         def inner_wrapper(wrapped_class):
             cls.registry[model_type] = wrapped_class
             return wrapped_class
+
         return inner_wrapper
 
     @classmethod

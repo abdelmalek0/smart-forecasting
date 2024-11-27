@@ -1,5 +1,7 @@
-import redis
 import json
+
+import redis
+
 from logging_config import logger
 
 class RedisHandler:

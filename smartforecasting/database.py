@@ -1,14 +1,17 @@
-from datetime import datetime, date, timedelta
-from psycopg2 import sql, pool, OperationalError, InterfaceError
-import psycopg2
+from datetime import date
+from datetime import datetime
+
 import pandas as pd
-from structs.models import DataPoint
-from utility import read_config
+import psycopg2
+from psycopg2 import InterfaceError
+from psycopg2 import OperationalError
+from psycopg2 import sql
+
 from logging_config import logger
+from structs.models import DataPoint
 
 
 class DatabaseHandler:
-
     def __init__(self, config):
         self.config = config
         self.conn_pool = None
@@ -22,12 +25,12 @@ class DatabaseHandler:
             self.conn_pool = psycopg2.pool.SimpleConnectionPool(
                 minconn=1,
                 maxconn=20,
-                host=self.config['database']['host'],
-                port=self.config['database']['port'],
-                dbname=self.config['database']['dbname'],
-                user=self.config['database']['user'],
-                password=self.config['database']['password'],
-                sslmode=self.config['database']['sslmode']
+                host=self.config["database"]["host"],
+                port=self.config["database"]["port"],
+                dbname=self.config["database"]["dbname"],
+                user=self.config["database"]["user"],
+                password=self.config["database"]["password"],
+                sslmode=self.config["database"]["sslmode"],
             )
             logger.info("Database connection pool created successfully.")
         except Exception as e:
@@ -73,7 +76,9 @@ class DatabaseHandler:
                 self.connection.poll()
                 self.last_used = datetime.now()
         except (OperationalError, InterfaceError) as e:
-            logger.warning(f"Connection error detected: {e}. Attempting reconnection...")
+            logger.warning(
+                f"Connection error detected: {e}. Attempting reconnection..."
+            )
             self.connect()
 
     def execute_statement(self, statement, params=None):
@@ -101,14 +106,16 @@ class DatabaseHandler:
             raise e
 
     def insert_dataframe(self, df: pd.DataFrame, ds_id: int):
-        logger.info(f'Inserting data for data source ID: {ds_id}')
+        logger.info(f"Inserting data for data source ID: {ds_id}")
 
-        table_name = self.config['database']['data-sources-table-name']
+        table_name = self.config["database"]["data-sources-table-name"]
         for index, row in df.iterrows():
             # Create INSERT statement
-            insert_statement = sql.SQL("INSERT INTO {} (datasource_id, ts, value) VALUES ({})").format(
+            insert_statement = sql.SQL(
+                "INSERT INTO {} (datasource_id, ts, value) VALUES ({})"
+            ).format(
                 sql.Identifier(table_name),
-                sql.SQL(', ').join(map(sql.Literal, [ds_id] + row.to_list()))
+                sql.SQL(", ").join(map(sql.Literal, [ds_id] + row.to_list())),
             )
             # Execute INSERT statement
             self.execute_statement(insert_statement)
@@ -116,37 +123,47 @@ class DatabaseHandler:
     def add_data_point(self, data_point: DataPoint, ds_id: int):
         logger.info(f"Inserting data for data source ID: {ds_id}")
 
-        table_name = self.config['database']['data-sources-table-name']
+        table_name = self.config["database"]["data-sources-table-name"]
 
         # First, check if a datapoint with the same ds_id and ts already exists
-        check_statement = sql.SQL("SELECT COUNT(*) FROM {} WHERE datasource_id = %s AND ts = %s").format(
-            sql.Identifier(table_name)
-        )
+        check_statement = sql.SQL(
+            "SELECT COUNT(*) FROM {} WHERE datasource_id = %s AND ts = %s"
+        ).format(sql.Identifier(table_name))
         self.execute_statement(check_statement, (ds_id, data_point.ts))
         count = self.cursor.fetchone()[0]
 
         if count > 0:
-            logger.info(f"Datapoint for data source ID: {ds_id} at timestamp: {data_point.ts} already exists. Skipping insertion.")
+            logger.info(
+                f"Datapoint for data source ID: {ds_id} at timestamp: {data_point.ts} already exists. Skipping insertion."
+            )
             return 0
 
         # If no existing datapoint found, proceed with insertion
-        insert_statement = sql.SQL("INSERT INTO {} (datasource_id, ts, value) VALUES ({})").format(
+        insert_statement = sql.SQL(
+            "INSERT INTO {} (datasource_id, ts, value) VALUES ({})"
+        ).format(
             sql.Identifier(table_name),
-            sql.SQL(', ').join(map(sql.Literal, [ds_id, data_point.ts, data_point.value]))
+            sql.SQL(", ").join(
+                map(sql.Literal, [ds_id, data_point.ts, data_point.value])
+            ),
         )
         # Execute INSERT statement
         self.execute_statement(insert_statement)
-        logger.info(f"Datapoint for data source ID: {ds_id} at timestamp: {data_point.ts} inserted successfully.")
+        logger.info(
+            f"Datapoint for data source ID: {ds_id} at timestamp: {data_point.ts} inserted successfully."
+        )
         return 1
 
     def get_data_point(self, ds_id: int, ts: date | datetime) -> float:
-        logger.info(f"Retrieving data point for data source ID: {ds_id} at timestamp: {ts}")
-
-        table_name = self.config['database']['data-sources-table-name']
-
-        select_statement = sql.SQL("SELECT * FROM {table} WHERE datasource_id = %s AND ts = %s").format(
-            table=sql.Identifier(table_name)
+        logger.info(
+            f"Retrieving data point for data source ID: {ds_id} at timestamp: {ts}"
         )
+
+        table_name = self.config["database"]["data-sources-table-name"]
+
+        select_statement = sql.SQL(
+            "SELECT * FROM {table} WHERE datasource_id = %s AND ts = %s"
+        ).format(table=sql.Identifier(table_name))
 
         # Print the query for debugging
         logger.info("Executing query: %s", select_statement.as_string(self.cursor))
@@ -168,21 +185,25 @@ class DatabaseHandler:
             return -1
 
     def update_data_point(self, data_point: DataPoint, ds_id: int):
-        logger.info(f"Updating data point for data source ID: {ds_id} at timestamp: {data_point.ts}")
+        logger.info(
+            f"Updating data point for data source ID: {ds_id} at timestamp: {data_point.ts}"
+        )
 
-        table_name = self.config['database']['data-sources-table-name']
+        table_name = self.config["database"]["data-sources-table-name"]
 
         # Create UPDATE statement
-        update_statement = sql.SQL("UPDATE {table} SET value = %s WHERE datasource_id = %s AND ts = %s").format(
-            table=sql.Identifier(table_name)
-        )
+        update_statement = sql.SQL(
+            "UPDATE {table} SET value = %s WHERE datasource_id = %s AND ts = %s"
+        ).format(table=sql.Identifier(table_name))
 
         # Print the query for debugging
         logger.info("Executing query:  %s", update_statement.as_string(self.cursor))
 
         try:
             # Execute UPDATE statement
-            self.execute_statement(update_statement, (data_point.value, ds_id, data_point.ts))
+            self.execute_statement(
+                update_statement, (data_point.value, ds_id, data_point.ts)
+            )
 
             # Check if any row was updated
             if self.cursor.rowcount > 0:
@@ -192,23 +213,26 @@ class DatabaseHandler:
         except Exception as e:
             logger.error(f"An error occurred while updating data: {e}")
             self.connection.rollback()
-    
+
     def delete_data_point(self, ds_id: int, ts: date | datetime) -> int:
         """
         Delete a data point from the database by dropping the partition containing the given timestamp
         and reinserting all data except the one to be deleted.
-        
+
         :param ds_id: The data source ID.
         :param ts: The timestamp of the data point to be deleted.
         """
-        logger.info(f"Deleting data point for data source ID: {ds_id} at timestamp: {ts}")
+        logger.info(
+            f"Deleting data point for data source ID: {ds_id} at timestamp: {ts}"
+        )
 
-        table_name = self.config['database']['data-sources-table-name']
+        table_name = self.config["database"]["data-sources-table-name"]
         temp_table_name = f"{table_name}_temp"
 
         # Check if the data point exists before deletion
         exists_before = self.get_data_point(ds_id, ts)
-        if exists_before == -1: return 0
+        if exists_before == -1:
+            return 0
 
         # Step 1: Create a temporary table with all data except the one to delete
         create_temp_table_statement = sql.SQL(
@@ -219,13 +243,11 @@ class DatabaseHandler:
             """
         ).format(
             temp_table=sql.Identifier(temp_table_name),
-            main_table=sql.Identifier(table_name)
+            main_table=sql.Identifier(table_name),
         )
 
         # Step 2: Drop the original table
-        drop_original_table_statement = sql.SQL(
-            "DROP TABLE {main_table}"
-        ).format(
+        drop_original_table_statement = sql.SQL("DROP TABLE {main_table}").format(
             main_table=sql.Identifier(table_name)
         )
 
@@ -234,7 +256,7 @@ class DatabaseHandler:
             "RENAME TABLE {temp_table} TO {main_table};"
         ).format(
             main_table=sql.Identifier(table_name),
-            temp_table=sql.Identifier(temp_table_name)
+            temp_table=sql.Identifier(temp_table_name),
         )
 
         try:
@@ -247,16 +269,20 @@ class DatabaseHandler:
             exists_after = self.get_data_point(ds_id, ts)
 
             if exists_after == -1:
-                logger.info(f"Data point for data source ID: {ds_id} at timestamp: {ts} was successfully deleted.")
+                logger.info(
+                    f"Data point for data source ID: {ds_id} at timestamp: {ts} was successfully deleted."
+                )
                 return 1
             else:
-                logger.warning(f"Data point for data source ID: {ds_id} at timestamp: {ts} may not have been deleted correctly.")
+                logger.warning(
+                    f"Data point for data source ID: {ds_id} at timestamp: {ts} may not have been deleted correctly."
+                )
                 return 0
         except Exception as e:
             logger.error(f"An error occurred while deleting data point: {e}")
             self.connection.rollback()
             return -1
-       
+
     def delete_datasource(self, ds_id: int) -> int:
         """
         Delete data points from the database by dropping the partition containing
@@ -267,7 +293,7 @@ class DatabaseHandler:
         """
         logger.info(f"Deleting data point for data source ID: {ds_id}")
 
-        table_name = self.config['database']['data-sources-table-name']
+        table_name = self.config["database"]["data-sources-table-name"]
         temp_table_name = f"{table_name}_temp"
 
         try:
@@ -280,14 +306,12 @@ class DatabaseHandler:
                 """
             ).format(
                 temp_table=sql.Identifier(temp_table_name),
-                main_table=sql.Identifier(table_name)
+                main_table=sql.Identifier(table_name),
             )
-            self.execute_statement(create_temp_table_sql, (ds_id, ))
+            self.execute_statement(create_temp_table_sql, (ds_id,))
 
             # Step 2: Drop the original table
-            drop_original_table_sql = sql.SQL(
-                "DROP TABLE {main_table}"
-            ).format(
+            drop_original_table_sql = sql.SQL("DROP TABLE {main_table}").format(
                 main_table=sql.Identifier(table_name)
             )
             self.execute_statement(drop_original_table_sql)
@@ -297,7 +321,7 @@ class DatabaseHandler:
                 "RENAME TABLE {temp_table} TO {main_table}"
             ).format(
                 temp_table=sql.Identifier(temp_table_name),
-                main_table=sql.Identifier(table_name)
+                main_table=sql.Identifier(table_name),
             )
             self.execute_statement(rename_temp_table_sql)
 
@@ -310,10 +334,10 @@ class DatabaseHandler:
     def get_all_data_for_datasource(self, ds_id: int) -> pd.DataFrame:
         logger.info(f"Retrieving all data for data source ID: {ds_id}")
 
-        table_name = self.config['database']['data-sources-table-name']
-        select_statement = sql.SQL("SELECT * FROM {table} WHERE datasource_id = %s ORDER BY ts").format(
-            table=sql.Identifier(table_name)
-        )
+        table_name = self.config["database"]["data-sources-table-name"]
+        select_statement = sql.SQL(
+            "SELECT * FROM {table} WHERE datasource_id = %s ORDER BY ts"
+        ).format(table=sql.Identifier(table_name))
         logger.info("Executing query: %s", select_statement.as_string(self.cursor))
 
         try:
@@ -321,23 +345,23 @@ class DatabaseHandler:
             result = self.cursor.fetchall()
 
             # Convert the result to a DataFrame
-            df = pd.DataFrame(result, columns=['datasource_id', 'ts', 'value'])
-            return df[['ts', 'value']]
+            df = pd.DataFrame(result, columns=["datasource_id", "ts", "value"])
+            return df[["ts", "value"]]
         except Exception as e:
             logger.error(f"An error occurred while retrieving all data: {e}")
-            return pd.DataFrame(columns=['ts', 'value'])
+            return pd.DataFrame(columns=["ts", "value"])
 
     def get_latest_data_points(self, datasource_id: int, lags: int) -> pd.DataFrame:
-        logger.info(f"Retrieving latest {lags} data points for data source ID: {datasource_id}")
+        logger.info(
+            f"Retrieving latest {lags} data points for data source ID: {datasource_id}"
+        )
 
-        table_name = self.config['database']['data-sources-table-name']
+        table_name = self.config["database"]["data-sources-table-name"]
         select_statement = sql.SQL("""
             SELECT * FROM (
                 SELECT * FROM {table} WHERE datasource_id = %s ORDER BY ts DESC LIMIT %s
             ) AS latest_data ORDER BY ts ASC
-        """).format(
-            table=sql.Identifier(table_name)
-        )
+        """).format(table=sql.Identifier(table_name))
 
         # Print the query for debugging
         logger.info("Executing query: %s", select_statement.as_string(self.cursor))
@@ -348,56 +372,58 @@ class DatabaseHandler:
             result = self.cursor.fetchall()
 
             # Convert the result to a DataFrame
-            df = pd.DataFrame(result, columns=['datasource_id', 'ts', 'value'])
-            return df[['ts', 'value']]
+            df = pd.DataFrame(result, columns=["datasource_id", "ts", "value"])
+            return df[["ts", "value"]]
         except Exception as e:
             logger.error(f"An error occurred: {e}")
-            return pd.DataFrame(columns=['ts', 'value'])
+            return pd.DataFrame(columns=["ts", "value"])
 
     def create_data_sources_table(self):
         logger.info(f"Creating data sources table")
 
-        table_name = self.config['database']['data-sources-table-name']
-        create_statement = f'''
+        table_name = self.config["database"]["data-sources-table-name"]
+        create_statement = f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
                 datasource_id INT NOT NULL,
                 ts TIMESTAMP NOT NULL,
                 value DOUBLE PRECISION  NULL
             );
-        '''
+        """
 
         try:
             self.execute_statement(create_statement)
         except Exception as e:
             logger.error(f"An error occurred while creating the table: {e}")
-            
+
     def create_datasource_forecasting_table(self):
         logger.info(f"Creating datasource forecasting table")
 
-        table_name = self.config['database']['forecasting-table-name']
-        create_statement = f'''
+        table_name = self.config["database"]["forecasting-table-name"]
+        create_statement = f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
                 datasource_id INT NOT NULL,
                 ts TIMESTAMP NOT NULL,
                 algorithm varchar NOT NULL,
                 value DOUBLE PRECISION NOT NULL
             );
-        '''
+        """
 
         try:
             self.execute_statement(create_statement)
         except Exception as e:
             logger.error(f"An error occurred while creating the table: {e}")
-    
-    def insert_forecasting_dataframe(self, df: pd.DataFrame, ds_id: int, algorithm: str):
-        logger.info(f'Inserting forecasting data for data source ID: {ds_id}')
-        table_name = self.config['database']['forecasting-table-name']
-        data_length = len(df)
-        logger.info(f'Data length: {data_length}')
 
-        for index, row in enumerate(df.to_dict(orient='records')):
-            ts = row['ts']
-            value = row['value']
+    def insert_forecasting_dataframe(
+        self, df: pd.DataFrame, ds_id: int, algorithm: str
+    ):
+        logger.info(f"Inserting forecasting data for data source ID: {ds_id}")
+        table_name = self.config["database"]["forecasting-table-name"]
+        data_length = len(df)
+        logger.info(f"Data length: {data_length}")
+
+        for index, row in enumerate(df.to_dict(orient="records")):
+            ts = row["ts"]
+            value = row["value"]
             # logger.info(f'Processing row {index} with ts={ts} and value={value}')
 
             # Check if the record exists
@@ -435,19 +461,19 @@ class DatabaseHandler:
 
                 # logger.info('Executing insert statement')
                 self.execute_statement(insert_statement, (ds_id, algorithm, ts, value))
-                
+
             if index % 10 == 0:
                 yield index, data_length
 
-        logger.info('Finished inserting forecasting data')
+        logger.info("Finished inserting forecasting data")
 
     def get_forecasting_data_for_datasource(self, ds_id: int) -> pd.DataFrame:
         logger.info(f"Retrieving all data for data source ID: {ds_id}")
 
-        table_name = self.config['database']['forecasting-table-name']
-        select_statement = sql.SQL("SELECT * FROM {table} WHERE datasource_id = %s ORDER BY ts").format(
-            table=sql.Identifier(table_name)
-        )
+        table_name = self.config["database"]["forecasting-table-name"]
+        select_statement = sql.SQL(
+            "SELECT * FROM {table} WHERE datasource_id = %s ORDER BY ts"
+        ).format(table=sql.Identifier(table_name))
         logger.info("Executing query: %s", select_statement.as_string(self.cursor))
 
         try:
@@ -455,8 +481,10 @@ class DatabaseHandler:
             result = self.cursor.fetchall()
 
             # Convert the result to a DataFrame
-            df = pd.DataFrame(result, columns=['datasource_id', 'ts', 'algorithm', 'value'])
-            return df[['ts', 'algorithm', 'value']]
+            df = pd.DataFrame(
+                result, columns=["datasource_id", "ts", "algorithm", "value"]
+            )
+            return df[["ts", "algorithm", "value"]]
         except Exception as e:
             logger.error(f"An error occurred while retrieving all data: {e}")
-            return pd.DataFrame(columns=['ts', 'algorithm', 'value'])
+            return pd.DataFrame(columns=["ts", "algorithm", "value"])

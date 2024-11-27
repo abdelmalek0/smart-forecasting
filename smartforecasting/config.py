@@ -1,8 +1,8 @@
-from database import DatabaseHandler
 from celery_config import make_celery
+from constants import DB_CONFIG_FILENAME
+from database import DatabaseHandler
 from redis_memory import RedisHandler
 from utility import read_config
-from constants import DB_CONFIG_FILENAME
 
 class Config:
     @classmethod
@@ -19,4 +19,3 @@ class Config:
         cls.database.create_data_sources_table()
         cls.database.create_datasource_forecasting_table()
         app.app_context().push()
-            
