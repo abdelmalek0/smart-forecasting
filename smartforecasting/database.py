@@ -5,6 +5,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import InterfaceError
 from psycopg2 import OperationalError
+from psycopg2 import pool
 from psycopg2 import sql
 
 from logging_config import logger
